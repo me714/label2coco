@@ -1,6 +1,7 @@
 import os
 import json
 import numpy as np
+import cv2
 # import glob
 import shutil
 # from sklearn.model_selection import train_test_split
@@ -23,7 +24,7 @@ class Lableme2CoCo:
         self.dd = 0
 
     def save_coco_json(self, instance, save_path):
-        json.dump(instance, open(save_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)  # indent=2 更加美观显示
+        json.dump(instance, open(save_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)  # indent=2 更加美观显示
 
     # 由json文件构建COCO
     def to_coco(self, json_path, tags):
@@ -42,10 +43,14 @@ class Lableme2CoCo:
         _via_image_id_list = obj['_via_image_id_list']
         random.shuffle(_via_image_id_list)
         ll = self._dataset_split(tags, _via_image_id_list, _via_img_metadata)
+        img_list = []
         for img_id, img in enumerate(ll):
             self.images.append(self._image(ll, img, img_id))
             imga = ll[img]
             regions = imga['regions']
+            if not regions:
+                continue
+            img_list.append(ll[img])
             for r, region in enumerate(regions):
                 annotation, point_x = self._annotation(region)
                 if not point_x:
@@ -59,7 +64,7 @@ class Lableme2CoCo:
         instance['images'] = self.images
         instance['annotations'] = self.annotations
         instance['categories'] = self.categories
-        return instance, ll
+        return instance, img_list
 
     # 构建类别
     def _init_categories(self):
@@ -77,10 +82,9 @@ class Lableme2CoCo:
         photo = _via_img_metadata[img]
         filename = photo['filename']
         hw = photo['file_attributes']
-        # image['height'] = hw['height']
         image['height'] = hw['height']
         image['width'] = hw['width']
-        image['id'] = self.img_id
+        image['id'] = img_id
         image['file_name'] = filename
         return image
 
@@ -90,7 +94,7 @@ class Lableme2CoCo:
         shape_attributes = region['shape_attributes']
         all_points_x = shape_attributes['all_points_x']
         all_points_y = shape_attributes['all_points_y']
-        a = np.array([all_points_x, all_points_y])
+        a = np.array([all_points_x, all_points_y],dtype=int)
         b = np.transpose(a)
         label = region_attributes['takephoto']
         annotation = {}
@@ -117,7 +121,9 @@ class Lableme2CoCo:
             min_y = min(min_y, y)
             max_x = max(max_x, x)
             max_y = max(max_y, y)
-        return [min_x, min_y, max_x - min_x, max_y - min_y]
+        bbox = [min_x, min_y, max_x - min_x, max_y - min_y]
+        bbox = np.asarray(bbox).tolist()
+        return bbox
 
     # 将图片分为训练集，验证集和测试集
     def _dataset_split(self, tags, _via_image_id_list, _via_img_metadata):
@@ -135,7 +141,7 @@ class Lableme2CoCo:
 
 if __name__ == '__main__':
     # 将一个文件夹下的照片和labelme的标注文件，分成了train和val的coco json文件和照片
-
+    images_path = 'F:/Web Downloads/dataset'
     train_img_out_path = './train_img'
     val_img_out_path = './val_img'
     test_img_out_path = './test_img'
@@ -158,9 +164,21 @@ if __name__ == '__main__':
     test_instance, test_img_list = l2c_test.to_coco(json_list_path, 'test')
     l2c_train.save_coco_json(test_instance, 'test_a.json')
 
-    for file in train_img_list:
-        shutil.copy(file.replace("json", "jpg"), train_img_out_path)
+    # for file in train_img_list:
+    #     file_name = file['filename']
+    #     file_path = images_path + '/' + file_name
+    #     image = cv2.imread(file_path)
+    #     save_path = train_img_out_path + '/' + file_name.replace("bmp", "jpg")
+    #     cv2.imwrite(save_path, image)
     for file in valid_img_list:
-        shutil.copy(file.replace("json", "jpg"), val_img_out_path)
+        file_name = file['filename']
+        file_path = images_path + '/' + file_name
+        image = cv2.imread(file_path)
+        save_path = val_img_out_path + '/' + file_name.replace("bmp", "jpg")
+        cv2.imwrite(save_path, image)
     for file in test_img_list:
-        shutil.copy(file.replace("json", "jpg"), test_img_out_path)
+        file_name = file['filename']
+        file_path = images_path + '/' + file_name
+        image = cv2.imread(file_path)
+        save_path = test_img_out_path + '/' + file_name.replace("bmp", "jpg")
+        cv2.imwrite(save_path, image)
