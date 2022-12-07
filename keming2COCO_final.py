@@ -34,8 +34,6 @@ class Lableme2CoCo:
         takephoto = region['takephoto']
         options = takephoto['options']
         for option in options:
-            if option == '东华':
-                continue
             self.dd += 1
             self.class_name_to_id[option] = self.dd
         self._init_categories()
@@ -50,7 +48,7 @@ class Lableme2CoCo:
             if not regions:
                 continue
             img_list.append(ll[img])
-            self.images.append(self._image(ll, img, img_id))
+            self.images.append(self._image(ll, img))
             for r, region in enumerate(regions):
                 annotation, point_x = self._annotation(region)
                 if not point_x:
@@ -75,7 +73,7 @@ class Lableme2CoCo:
             self.categories.append(category)
 
     # 构建COCO的image字段
-    def _image(self, _via_img_metadata, img, img_id):
+    def _image(self, _via_img_metadata, img):
         image = {}
         # img_x = utils.img_b64_to_arr(obj['imageData'])
         # h, w = img_x.shape[:-1]
@@ -84,7 +82,7 @@ class Lableme2CoCo:
         hw = photo['file_attributes']
         image['height'] = hw['height']
         image['width'] = hw['width']
-        image['id'] = img_id
+        image['id'] = self.img_id
         image['file_name'] = filename
         return image
 
