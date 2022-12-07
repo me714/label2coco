@@ -45,12 +45,12 @@ class Lableme2CoCo:
         ll = self._dataset_split(tags, _via_image_id_list, _via_img_metadata)
         img_list = []
         for img_id, img in enumerate(ll):
-            self.images.append(self._image(ll, img, img_id))
             imga = ll[img]
             regions = imga['regions']
             if not regions:
                 continue
             img_list.append(ll[img])
+            self.images.append(self._image(ll, img, img_id))
             for r, region in enumerate(regions):
                 annotation, point_x = self._annotation(region)
                 if not point_x:
@@ -80,7 +80,7 @@ class Lableme2CoCo:
         # img_x = utils.img_b64_to_arr(obj['imageData'])
         # h, w = img_x.shape[:-1]
         photo = _via_img_metadata[img]
-        filename = photo['filename']
+        filename = photo['filename'].replace('bmp', 'jpg')
         hw = photo['file_attributes']
         image['height'] = hw['height']
         image['width'] = hw['width']
@@ -164,12 +164,12 @@ if __name__ == '__main__':
     test_instance, test_img_list = l2c_test.to_coco(json_list_path, 'test')
     l2c_train.save_coco_json(test_instance, 'test_a.json')
 
-    # for file in train_img_list:
-    #     file_name = file['filename']
-    #     file_path = images_path + '/' + file_name
-    #     image = cv2.imread(file_path)
-    #     save_path = train_img_out_path + '/' + file_name.replace("bmp", "jpg")
-    #     cv2.imwrite(save_path, image)
+    for file in train_img_list:
+        file_name = file['filename']
+        file_path = images_path + '/' + file_name
+        image = cv2.imread(file_path)
+        save_path = train_img_out_path + '/' + file_name.replace("bmp", "jpg")
+        cv2.imwrite(save_path, image)
     for file in valid_img_list:
         file_name = file['filename']
         file_path = images_path + '/' + file_name
